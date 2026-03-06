@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTRL — Clients</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Orbitron:wght@500;700;900&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-deep:#06080d;--bg-surface:#0b0f18;--bg-card:#0f1420;--bg-card-hover:#141a28;
+  --bg-sidebar:#080c14;--bg-feed:#0a0e17;--cyan:#00f0ff;--cyan-dim:#00f0ff60;
+  --cyan-glow:0 0 12px #00f0ff44,0 0 40px #00f0ff18;--magenta:#ff2eaa;--magenta-dim:#ff2eaa55;
+  --green:#00ff88;--green-dim:#00ff8855;--yellow:#ffe048;--yellow-dim:#ffe04855;
+  --orange:#ff8a2e;--red:#ff3858;--red-dim:#ff385855;
+  --text-primary:#e8edf5;--text-secondary:#7a8ba8;--text-muted:#475570;
+  --border:#1a2235;--border-bright:#243050;
+  --font-heading:'Orbitron',sans-serif;--font-data:'JetBrains Mono',monospace;
+  --font-body:'Outfit',sans-serif;--radius:10px;--sidebar-w:62px;--feed-w:272px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{font-size:14px}
+body{font-family:var(--font-body);background:var(--bg-deep);color:var(--text-primary);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:linear-gradient(180deg,transparent 0%,var(--bg-deep) 100%),linear-gradient(90deg,#0e1a2e22 1px,transparent 1px),linear-gradient(180deg,#0e1a2e22 1px,transparent 1px);background-size:100% 100%,48px 48px,48px 48px;z-index:-2}
+body::after{content:'';position:fixed;top:-40%;left:-20%;width:140%;height:140%;background:radial-gradient(ellipse at 30% 20%,#00f0ff06 0%,transparent 55%),radial-gradient(ellipse at 70% 80%,#ff2eaa05 0%,transparent 55%);z-index:-1}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:4px}
+.layout{display:grid;grid-template-columns:var(--sidebar-w) 1fr var(--feed-w);min-height:100vh}
+
+.sidebar{width:var(--sidebar-w);background:var(--bg-sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:16px 0;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.sidebar-logo{font-family:var(--font-heading);font-weight:900;font-size:.7rem;color:var(--cyan);letter-spacing:3px;margin-bottom:32px;text-shadow:0 0 10px var(--cyan-dim)}
+.sidebar-nav{display:flex;flex-direction:column;gap:6px;flex:1}
+.sidebar-nav a{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:8px;color:var(--text-muted);text-decoration:none;transition:all .2s;position:relative}
+.sidebar-nav a:hover,.sidebar-nav a.active{color:var(--cyan);background:#00f0ff10}
+.sidebar-nav a.active::before{content:'';position:absolute;left:-11px;width:3px;height:20px;background:var(--cyan);border-radius:0 3px 3px 0;box-shadow:0 0 8px var(--cyan-dim)}
+.sidebar-nav a svg{width:20px;height:20px}
+.sidebar-bottom{margin-top:auto;padding-top:16px}
+.sidebar-avatar{width:32px;height:32px;border-radius:50%;border:2px solid var(--border-bright);background:linear-gradient(135deg,var(--cyan),var(--magenta))}
+
+.main{grid-column:2;padding:24px 28px;overflow-y:auto;max-height:100vh}
+.section-title{font-family:var(--font-heading);font-weight:700;font-size:.75rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--text-secondary);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section-title .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 6px var(--cyan)}
+
+/* Client Overview Stats */
+.client-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.cs-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center}
+.cs-val{font-family:var(--font-data);font-size:1.5rem;font-weight:700}
+.cs-label{font-family:var(--font-heading);font-size:.55rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-top:4px}
+
+/* Client Cards */
+.clients-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:28px}
+.client-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:22px;transition:all .25s}
+.client-card:hover{border-color:var(--cyan-dim);box-shadow:var(--cyan-glow)}
+
+.cc-header{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.cc-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;border:2px solid var(--border-bright)}
+.cc-info{flex:1}
+.cc-name{font-family:var(--font-heading);font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase}
+.cc-handle{font-family:var(--font-data);font-size:.68rem;color:var(--text-secondary)}
+.cc-phase{font-family:var(--font-data);font-size:.6rem;padding:3px 10px;border-radius:4px;font-weight:600}
+.phase-active{background:#00f0ff15;color:var(--cyan)}.phase-review{background:#ffe04815;color:var(--yellow)}
+.phase-complete{background:#00ff8815;color:var(--green)}.phase-onboard{background:#ff2eaa15;color:var(--magenta)}
+
+/* Phase Progress */
+.cc-progress{margin-bottom:16px}
+.cc-progress-label{display:flex;justify-content:space-between;margin-bottom:6px}
+.cc-progress-label span{font-size:.72rem;color:var(--text-secondary)}
+.cc-progress-label strong{font-family:var(--font-data);font-size:.72rem}
+.cc-bar-track{width:100%;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.cc-bar-fill{height:100%;border-radius:3px;transition:width .8s ease}
+
+/* Phase Steps */
+.cc-phases{display:flex;gap:4px;margin-bottom:16px}
+.cc-phase-dot{flex:1;height:4px;border-radius:2px;background:var(--border)}
+.cc-phase-dot.done{background:var(--green)}.cc-phase-dot.current{background:var(--cyan)}
+
+/* Task Checklist */
+.cc-tasks{margin-bottom:14px}
+.cc-task{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:.78rem;color:var(--text-secondary);border-bottom:1px solid var(--border)}
+.cc-task:last-child{border-bottom:none}
+.cc-check{width:16px;height:16px;border:2px solid var(--border-bright);border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0}
+.cc-check.checked{background:var(--green);border-color:var(--green)}
+.cc-check.checked::after{content:'✓';color:var(--bg-deep);font-size:.6rem;font-weight:700}
+.cc-task.completed{text-decoration:line-through;color:var(--text-muted)}
+
+/* Next Action Box */
+.cc-next{background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;padding:10px 14px}
+.cc-next-label{font-family:var(--font-heading);font-size:.52rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px}
+.cc-next-text{font-size:.8rem;color:var(--cyan)}
+
+/* Feed */
+.feed{width:var(--feed-w);background:var(--bg-feed);border-left:1px solid var(--border);padding:20px 16px;position:fixed;top:0;right:0;bottom:0;overflow-y:auto}
+.feed-title{font-family:var(--font-heading);font-size:.62rem;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--text-secondary);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.feed-title .pulse{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.feed-item{padding:12px 0;border-bottom:1px solid var(--border)}
+.feed-item:last-child{border-bottom:none}
+.feed-time{font-family:var(--font-data);font-size:.6rem;color:var(--text-muted);margin-bottom:4px}
+.feed-text{font-size:.78rem;color:var(--text-secondary);line-height:1.5}
+.feed-text strong{color:var(--text-primary);font-weight:500}
+.feed-text .hl-cyan{color:var(--cyan)}.feed-text .hl-green{color:var(--green)}
+.feed-text .hl-magenta{color:var(--magenta)}.feed-text .hl-yellow{color:var(--yellow)}
+.feed-tag{display:inline-block;font-family:var(--font-data);font-size:.58rem;padding:2px 6px;border-radius:3px;margin-top:5px;background:#00f0ff12;color:var(--cyan);border:1px solid #00f0ff25}
+
+.fade-up{opacity:0;transform:translateY(18px);animation:fadeUp .55s ease forwards}
+@keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
+.d1{animation-delay:.05s}.d2{animation-delay:.1s}.d3{animation-delay:.15s}
+.d4{animation-delay:.2s}.d5{animation-delay:.25s}.d6{animation-delay:.3s}
+.d7{animation-delay:.35s}.d8{animation-delay:.4s}.d9{animation-delay:.45s}
+.d10{animation-delay:.5s}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ═══════ LEFT SIDEBAR ═══════ -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">CTRL</div>
+    <div class="sidebar-nav">
+      <a href="ctrl-dashboard.html" title="Overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      </a>
+      <a href="research.html" title="Research">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </a>
+      <a href="pipeline.html" title="Pipeline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </a>
+      <a href="performance.html" title="Performance">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      </a>
+      <a href="agents.html" title="Agents">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </a>
+      <a href="clients.html" class="active" title="Clients">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </a>
+    </div>
+    <div class="sidebar-bottom"><div class="sidebar-avatar"></div></div>
+  </nav>
+
+  <!-- ═══════ MAIN CONTENT ═══════ -->
+  <main class="main">
+
+    <!-- Overview Stats -->
+    <div class="section-title fade-up d1"><span class="dot"></span>CLIENT OVERVIEW</div>
+    <div class="client-stats fade-up d2">
+      <div class="cs-card"><div class="cs-val" style="color:var(--cyan);">4</div><div class="cs-label">Active Clients</div></div>
+      <div class="cs-card"><div class="cs-val" style="color:var(--green);">12</div><div class="cs-label">Tasks Done</div></div>
+      <div class="cs-card"><div class="cs-val" style="color:var(--yellow);">6</div><div class="cs-label">In Progress</div></div>
+      <div class="cs-card"><div class="cs-val" style="color:var(--magenta);">2</div><div class="cs-label">Awaiting Review</div></div>
+    </div>
+
+    <!-- Client Cards -->
+    <div class="section-title fade-up d3"><span class="dot"></span>CLIENT PROJECTS</div>
+    <div class="clients-grid">
+
+      <!-- Lumina Studio -->
+      <div class="client-card fade-up d4">
+        <div class="cc-header">
+          <div class="cc-avatar" style="background:linear-gradient(135deg,#0a1628,#162040);border-color:#00f0ff40;">LS</div>
+          <div class="cc-info">
+            <div class="cc-name">Lumina Studio</div>
+            <div class="cc-handle">@lumina.studio</div>
+          </div>
+          <span class="cc-phase phase-active">ACTIVE</span>
+        </div>
+        <div class="cc-progress">
+          <div class="cc-progress-label"><span>Project Progress</span><strong style="color:var(--green);">75%</strong></div>
+          <div class="cc-bar-track"><div class="cc-bar-fill" style="width:75%;background:var(--green);"></div></div>
+        </div>
+        <div class="cc-phases">
+          <div class="cc-phase-dot done"></div>
+          <div class="cc-phase-dot done"></div>
+          <div class="cc-phase-dot done"></div>
+          <div class="cc-phase-dot current"></div>
+          <div class="cc-phase-dot"></div>
+        </div>
+        <div class="cc-tasks">
+          <div class="cc-task completed"><span class="cc-check checked"></span>Brand kit design</div>
+          <div class="cc-task completed"><span class="cc-check checked"></span>Content strategy doc</div>
+          <div class="cc-task completed"><span class="cc-check checked"></span>First 10 posts created</div>
+          <div class="cc-task"><span class="cc-check"></span>Launch campaign week 1</div>
+          <div class="cc-task"><span class="cc-check"></span>Performance review & optimize</div>
+        </div>
+        <div class="cc-next">
+          <div class="cc-next-label">Next Action</div>
+          <div class="cc-next-text">Schedule launch week posts — Mar 7</div>
+        </div>
+      </div>
+
+      <!-- NovaTech AI -->
+      <div class="client-card fade-up d5">
+        <div class="cc-header">
+          <div class="cc-avatar" style="background:linear-gradient(135deg,#0a1628,#162040);border-color:#ff2eaa40;">NT</div>
+          <div class="cc-info">
+            <div class="cc-name">NovaTech AI</div>
+            <div class="cc-handle">@novatech.ai</div>
+          </div>
+          <span class="cc-phase phase-review">REVIEW</span>
+        </div>
+        <div class="cc-progress">
+          <div class="cc-progress-label"><span>Project Progress</span><strong style="color:var(--yellow);">50%</strong></div>
+          <div class="cc-bar-track"><div class="cc-bar-fill" style="width:50%;background:var(--yellow);"></div></div>
+        </div>
+        <div class="cc-phases">
+          <div class="cc-phase-dot done"></div>
+          <div class="cc-phase-dot done"></div>
+          <div class="cc-phase-dot current"></div>
+          <div class="cc-phase-dot"></div>
+          <div class="cc-phase-dot"></div>
+        </div>
+        <div class="cc-tasks">
+          <div class="cc-task completed"><span class="cc-check checked"></span>Discovery call & brief</div>
+          <div class="cc-task completed"><span class="cc-check checked"></span>Competitor research report</div>
+          <div class="cc-task"><span class="cc-check"></span>Script batch (5 TikToks)</div>
+          <div class="cc-task"><span class="cc-check"></span>Video production</div>
+          <div class="cc-task"><span class="cc-check"></span>Campaign launch</div>
+        </div>
+        <div class="cc-next">
+          <div class="cc-next-label">Next Action</div>
+          <div class="cc-next-text">Client to approve script batch — awaiting feedback</div>
+        </div>
+      </div>
+
+      <!-- Apex Ventures -->
+      <div class="client-card fade-up d6">
+        <div class="cc-header">
+          <div class="cc-avatar" style="background:linear-gradient(135deg,#0a1628,#162040);border-color:#ffe04840;">AV</div>
+          <div class="cc-info">
+            <div class="cc-name">Apex Ventures</div>
+            <div class="cc-handle">@apex.vc</div>
+          </div>
+          <span class="cc-phase phase-onboard">ONBOARDING</span>
+        </div>
+        <div class="cc-progress">
+          <div class="cc-progress-label"><span>Project Progress</span><strong style="color:var(--magenta);">20%</strong></div>
+          <div class="cc-bar-track"><div class="cc-bar-fill" style="width:20%;background:var(--magenta);"></div></div>
+        </div>
+        <div class="cc-phases">
+          <div class="cc-phase-dot done"></div>
+          <div class="cc-phase-dot current"></div>
+          <div class="cc-phase-dot"></div>
+          <div class="cc-phase-dot"></div>
+          <div class="cc-phase-dot"></div>
+        </div>
+        <div class="cc-tasks">
+          <div class="cc-task completed"><span class="cc-check checked"></span>Onboarding form completed</div>
+          <div class="cc-task"><span class="cc-check"></span>Brand audit & positioning</div>
+          <div class="cc-task"><span class="cc-check"></span>Content calendar draft</div>
+          <div class="cc-task"><span class="cc-check"></span>First content batch</div>
+          <div class="cc-task"><span class="cc-check"></span>Go-live & monitoring</div>
+        </div>
+        <div class="cc-next">
+          <div class="cc-next-label">Next Action</div>
+          <div class="cc-next-text">Complete brand audit — Mar 8</div>
+        </div>
+      </div>
+
+      <!-- Drift Labs -->
+      <div class="client-card fade-up d7">
+        <div class="cc-header">
+          <div class="cc-avatar" style="background:linear-gradient(135deg,#0a1628,#162040);border-color:#00ff8840;">DL</div>
+          <div class="cc-info">
+            <div class="cc-name">Drift Labs</div>
+            <div class="cc-handle">@drift.labs</div>
+          </div>
+          <span class="cc-phase phase-complete">COMPLETE</span>
+        </div>
+        <div class="cc-progress">
+          <div class="cc-progress-label"><span>Project Progress</span><strong style="color:var(--green);">100%</strong></div>
+          <div class="cc-bar-track"><div class="cc-bar-fill" style="width:100%;background:var(--green);"></div></div>
+        </div>
+        <div class="cc-phases">
+          <div class="cc-phase-dot done"></div>
+          <div class="cc-phase-dot done"></div>
+          <div class="cc-phase-dot done"></div>
+          <div class="cc-phase-dot done"></div>
+          <div class="cc-phase-dot done"></div>
+        </div>
+        <div class="cc-tasks">
+          <div class="cc-task completed"><span class="cc-check checked"></span>Full brand overhaul</div>
+          <div class="cc-task completed"><span class="cc-check checked"></span>30-day content plan</div>
+          <div class="cc-task completed"><span class="cc-check checked"></span>20 posts produced</div>
+          <div class="cc-task completed"><span class="cc-check checked"></span>Campaign launched</div>
+          <div class="cc-task completed"><span class="cc-check checked"></span>Final report delivered</div>
+        </div>
+        <div class="cc-next">
+          <div class="cc-next-label">Next Action</div>
+          <div class="cc-next-text">Retainer renewal discussion — Mar 10</div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ═══════ CLIENT ACTIVITY FEED ═══════ -->
+  <aside class="feed">
+    <div class="feed-title"><span class="pulse"></span>CLIENT ACTIVITY</div>
+
+    <div class="feed-item fade-up d2">
+      <div class="feed-time">10 min ago</div>
+      <div class="feed-text"><strong>@lumina.studio</strong> approved <span class="hl-green">brand kit deliverable</span></div>
+      <span class="feed-tag">APPROVED</span>
+    </div>
+    <div class="feed-item fade-up d3">
+      <div class="feed-time">45 min ago</div>
+      <div class="feed-text"><strong>@novatech.ai</strong> left feedback on <span class="hl-yellow">script batch</span> — 2 revisions needed</div>
+      <span class="feed-tag">FEEDBACK</span>
+    </div>
+    <div class="feed-item fade-up d4">
+      <div class="feed-time">1 hr ago</div>
+      <div class="feed-text"><strong>@apex.vc</strong> completed <span class="hl-magenta">onboarding form</span></div>
+      <span class="feed-tag">ONBOARDING</span>
+    </div>
+    <div class="feed-item fade-up d5">
+      <div class="feed-time">2 hrs ago</div>
+      <div class="feed-text"><strong>@drift.labs</strong> — final <span class="hl-green">performance report sent</span>, project complete</div>
+      <span class="feed-tag">COMPLETE</span>
+    </div>
+    <div class="feed-item fade-up d6">
+      <div class="feed-time">3 hrs ago</div>
+      <div class="feed-text"><strong>@lumina.studio</strong> — 10 launch posts <span class="hl-cyan">scheduled for next week</span></div>
+      <span class="feed-tag">SCHEDULED</span>
+    </div>
+    <div class="feed-item fade-up d7">
+      <div class="feed-time">5 hrs ago</div>
+      <div class="feed-text"><strong>Quill</strong> finished <span class="hl-magenta">NovaTech script batch</span> — sent for client review</div>
+      <span class="feed-tag">DELIVERED</span>
+    </div>
+    <div class="feed-item fade-up d8">
+      <div class="feed-time">Yesterday</div>
+      <div class="feed-text"><strong>@drift.labs</strong> campaign result: <span class="hl-green">+42K followers in 30 days</span></div>
+      <span class="feed-tag">RESULT</span>
+    </div>
+    <div class="feed-item fade-up d9">
+      <div class="feed-time">Yesterday</div>
+      <div class="feed-text">New client inquiry from <strong>@stealth.mode</strong> — <span class="hl-cyan">discovery call booked</span> Mar 9</div>
+      <span class="feed-tag">LEAD</span>
+    </div>
+  </aside>
+
+</div>
+
+<script>
+// Interactive checkboxes
+document.querySelectorAll('.cc-check:not(.checked)').forEach(check => {
+  check.addEventListener('click', () => {
+    check.classList.toggle('checked');
+    const task = check.parentElement;
+    task.classList.toggle('completed');
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTRL — Performance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Orbitron:wght@500;700;900&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-deep:#06080d;--bg-surface:#0b0f18;--bg-card:#0f1420;--bg-card-hover:#141a28;
+  --bg-sidebar:#080c14;--bg-feed:#0a0e17;--cyan:#00f0ff;--cyan-dim:#00f0ff60;
+  --cyan-glow:0 0 12px #00f0ff44,0 0 40px #00f0ff18;--magenta:#ff2eaa;--magenta-dim:#ff2eaa55;
+  --green:#00ff88;--green-dim:#00ff8855;--yellow:#ffe048;--yellow-dim:#ffe04855;
+  --orange:#ff8a2e;--red:#ff3858;--red-dim:#ff385855;
+  --text-primary:#e8edf5;--text-secondary:#7a8ba8;--text-muted:#475570;
+  --border:#1a2235;--border-bright:#243050;
+  --font-heading:'Orbitron',sans-serif;--font-data:'JetBrains Mono',monospace;
+  --font-body:'Outfit',sans-serif;--radius:10px;--sidebar-w:62px;--feed-w:272px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{font-size:14px}
+body{font-family:var(--font-body);background:var(--bg-deep);color:var(--text-primary);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:linear-gradient(180deg,transparent 0%,var(--bg-deep) 100%),linear-gradient(90deg,#0e1a2e22 1px,transparent 1px),linear-gradient(180deg,#0e1a2e22 1px,transparent 1px);background-size:100% 100%,48px 48px,48px 48px;z-index:-2}
+body::after{content:'';position:fixed;top:-40%;left:-20%;width:140%;height:140%;background:radial-gradient(ellipse at 30% 20%,#00f0ff06 0%,transparent 55%),radial-gradient(ellipse at 70% 80%,#ff2eaa05 0%,transparent 55%);z-index:-1}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:4px}
+.layout{display:grid;grid-template-columns:var(--sidebar-w) 1fr var(--feed-w);min-height:100vh}
+
+/* Sidebar */
+.sidebar{width:var(--sidebar-w);background:var(--bg-sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:16px 0;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.sidebar-logo{font-family:var(--font-heading);font-weight:900;font-size:.7rem;color:var(--cyan);letter-spacing:3px;margin-bottom:32px;text-shadow:0 0 10px var(--cyan-dim)}
+.sidebar-nav{display:flex;flex-direction:column;gap:6px;flex:1}
+.sidebar-nav a{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:8px;color:var(--text-muted);text-decoration:none;transition:all .2s;position:relative}
+.sidebar-nav a:hover,.sidebar-nav a.active{color:var(--cyan);background:#00f0ff10}
+.sidebar-nav a.active::before{content:'';position:absolute;left:-11px;width:3px;height:20px;background:var(--cyan);border-radius:0 3px 3px 0;box-shadow:0 0 8px var(--cyan-dim)}
+.sidebar-nav a svg{width:20px;height:20px}
+.sidebar-bottom{margin-top:auto;padding-top:16px}
+.sidebar-avatar{width:32px;height:32px;border-radius:50%;border:2px solid var(--border-bright);background:linear-gradient(135deg,var(--cyan),var(--magenta))}
+
+.main{grid-column:2;padding:24px 28px;overflow-y:auto;max-height:100vh}
+.section-title{font-family:var(--font-heading);font-weight:700;font-size:.75rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--text-secondary);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section-title .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 6px var(--cyan)}
+
+/* Summary Cards */
+.summary-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
+.summary-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:all .25s;position:relative;overflow:hidden}
+.summary-card:hover{border-color:var(--cyan-dim);box-shadow:var(--cyan-glow)}
+.summary-card .platform-label{font-family:var(--font-heading);font-size:.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px}
+.summary-card .metric-row{display:flex;gap:20px;margin-bottom:12px}
+.metric-block .metric-val{font-family:var(--font-data);font-size:1.4rem;font-weight:700;line-height:1}
+.metric-block .metric-label{font-size:.7rem;color:var(--text-secondary);margin-top:2px}
+.sparkline{width:100%;height:40px}
+.sparkline polyline{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sparkline .area{stroke:none;opacity:.12}
+
+/* Performance Tables */
+.perf-table-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:28px}
+.perf-table{width:100%;border-collapse:collapse}
+.perf-table th{font-family:var(--font-heading);font-size:.56rem;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);text-align:left;padding:12px 14px;border-bottom:1px solid var(--border)}
+.perf-table td{padding:12px 14px;border-bottom:1px solid var(--border);font-size:.8rem;vertical-align:middle}
+.perf-table tr:last-child td{border-bottom:none}
+.perf-table tr:hover td{background:var(--bg-card-hover)}
+.perf-table .post-title{color:var(--text-primary);font-weight:500;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.perf-table .post-date{font-family:var(--font-data);font-size:.68rem;color:var(--text-muted)}
+.perf-table .views{font-family:var(--font-data);font-weight:600}
+.perf-table .eng-rate{font-family:var(--font-data);font-weight:600}
+.eng-good{color:var(--green)}.eng-mid{color:var(--yellow)}.eng-low{color:var(--red)}
+.mini-spark{width:80px;height:24px;display:inline-block;vertical-align:middle}
+.mini-spark polyline{fill:none;stroke-width:1.5;stroke-linecap:round}
+
+.badge-up{font-family:var(--font-data);font-size:.65rem;padding:3px 8px;border-radius:4px;background:#00ff8818;color:var(--green)}
+.badge-down{font-family:var(--font-data);font-size:.65rem;padding:3px 8px;border-radius:4px;background:#ff385818;color:var(--red)}
+
+/* Feed */
+.feed{width:var(--feed-w);background:var(--bg-feed);border-left:1px solid var(--border);padding:20px 16px;position:fixed;top:0;right:0;bottom:0;overflow-y:auto}
+.feed-title{font-family:var(--font-heading);font-size:.62rem;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--text-secondary);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.feed-title .pulse{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.feed-item{padding:12px 0;border-bottom:1px solid var(--border)}
+.feed-item:last-child{border-bottom:none}
+.feed-time{font-family:var(--font-data);font-size:.6rem;color:var(--text-muted);margin-bottom:4px}
+.feed-text{font-size:.78rem;color:var(--text-secondary);line-height:1.5}
+.feed-text strong{color:var(--text-primary);font-weight:500}
+.feed-text .hl-cyan{color:var(--cyan)}.feed-text .hl-green{color:var(--green)}
+.feed-text .hl-magenta{color:var(--magenta)}.feed-text .hl-yellow{color:var(--yellow)}
+.feed-tag{display:inline-block;font-family:var(--font-data);font-size:.58rem;padding:2px 6px;border-radius:3px;margin-top:5px;background:#00f0ff12;color:var(--cyan);border:1px solid #00f0ff25}
+
+/* Stat highlight card in feed */
+.feed-stat{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:6px}
+.feed-stat .fs-val{font-family:var(--font-data);font-size:1.1rem;font-weight:700}
+.feed-stat .fs-label{font-size:.7rem;color:var(--text-muted)}
+
+.fade-up{opacity:0;transform:translateY(18px);animation:fadeUp .55s ease forwards}
+@keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
+.d1{animation-delay:.05s}.d2{animation-delay:.1s}.d3{animation-delay:.15s}
+.d4{animation-delay:.2s}.d5{animation-delay:.25s}.d6{animation-delay:.3s}
+.d7{animation-delay:.35s}.d8{animation-delay:.4s}.d9{animation-delay:.45s}
+.d10{animation-delay:.5s}.d11{animation-delay:.55s}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ═══════ LEFT SIDEBAR ═══════ -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">CTRL</div>
+    <div class="sidebar-nav">
+      <a href="ctrl-dashboard.html" title="Overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      </a>
+      <a href="research.html" title="Research">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </a>
+      <a href="pipeline.html" title="Pipeline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </a>
+      <a href="performance.html" class="active" title="Performance">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      </a>
+      <a href="agents.html" title="Agents">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </a>
+      <a href="clients.html" title="Clients">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </a>
+    </div>
+    <div class="sidebar-bottom"><div class="sidebar-avatar"></div></div>
+  </nav>
+
+  <!-- ═══════ MAIN CONTENT ═══════ -->
+  <main class="main">
+
+    <!-- Summary Cards -->
+    <div class="section-title fade-up d1"><span class="dot"></span>PLATFORM SUMMARY</div>
+    <div class="summary-row">
+      <div class="summary-card fade-up d2">
+        <div class="platform-label" style="color:#ff004d;">TikTok</div>
+        <div class="metric-row">
+          <div class="metric-block"><div class="metric-val">2.4M</div><div class="metric-label">Views</div></div>
+          <div class="metric-block"><div class="metric-val">184K</div><div class="metric-label">Likes</div></div>
+          <div class="metric-block"><div class="metric-val">7.6%</div><div class="metric-label">Eng Rate</div></div>
+        </div>
+        <svg class="sparkline" viewBox="0 0 200 40">
+          <polyline class="area" points="0,35 30,28 60,32 90,18 120,22 150,10 180,14 200,8 200,40 0,40" fill="#ff004d"/>
+          <polyline points="0,35 30,28 60,32 90,18 120,22 150,10 180,14 200,8" stroke="#ff004d"/>
+        </svg>
+      </div>
+      <div class="summary-card fade-up d3">
+        <div class="platform-label" style="color:#c837ab;">Instagram</div>
+        <div class="metric-row">
+          <div class="metric-block"><div class="metric-val">847K</div><div class="metric-label">Reach</div></div>
+          <div class="metric-block"><div class="metric-val">62K</div><div class="metric-label">Likes</div></div>
+          <div class="metric-block"><div class="metric-val">5.2%</div><div class="metric-label">Eng Rate</div></div>
+        </div>
+        <svg class="sparkline" viewBox="0 0 200 40">
+          <polyline class="area" points="0,30 30,24 60,28 90,16 120,20 150,12 180,18 200,10 200,40 0,40" fill="#c837ab"/>
+          <polyline points="0,30 30,24 60,28 90,16 120,20 150,12 180,18 200,10" stroke="#c837ab"/>
+        </svg>
+      </div>
+      <div class="summary-card fade-up d4">
+        <div class="platform-label" style="color:#ff4848;">YouTube</div>
+        <div class="metric-row">
+          <div class="metric-block"><div class="metric-val">194K</div><div class="metric-label">Watch Hrs</div></div>
+          <div class="metric-block"><div class="metric-val">28K</div><div class="metric-label">Likes</div></div>
+          <div class="metric-block"><div class="metric-val">4.1%</div><div class="metric-label">Eng Rate</div></div>
+        </div>
+        <svg class="sparkline" viewBox="0 0 200 40">
+          <polyline class="area" points="0,14 30,18 60,12 90,20 120,16 150,24 180,18 200,22 200,40 0,40" fill="#ff4848"/>
+          <polyline points="0,14 30,18 60,12 90,20 120,16 150,24 180,18 200,22" stroke="#ff4848"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- TikTok Table -->
+    <div class="section-title fade-up d5"><span class="dot"></span>TIKTOK POSTS</div>
+    <div class="perf-table-wrap fade-up d6">
+      <table class="perf-table">
+        <thead><tr><th>Post</th><th>Date</th><th>Views</th><th>Likes</th><th>Comments</th><th>Eng Rate</th><th>Trend</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="post-title">AI Tools You're Sleeping On</td>
+            <td class="post-date">Mar 5</td>
+            <td class="views">2,100,000</td>
+            <td>148,200</td>
+            <td>12,400</td>
+            <td class="eng-rate eng-good">7.6%</td>
+            <td><svg class="mini-spark" viewBox="0 0 80 24"><polyline points="0,20 12,16 24,18 36,10 48,12 60,4 72,6 80,2" stroke="#00ff88"/></svg></td>
+          </tr>
+          <tr>
+            <td class="post-title">5 Free AI Tools That Replace $500/mo</td>
+            <td class="post-date">Mar 3</td>
+            <td class="views">840,000</td>
+            <td>62,100</td>
+            <td>5,800</td>
+            <td class="eng-rate eng-good">8.1%</td>
+            <td><svg class="mini-spark" viewBox="0 0 80 24"><polyline points="0,18 12,14 24,16 36,8 48,10 60,6 72,4 80,2" stroke="#00ff88"/></svg></td>
+          </tr>
+          <tr>
+            <td class="post-title">POV: Your AI Agent Books Meetings</td>
+            <td class="post-date">Mar 1</td>
+            <td class="views">620,000</td>
+            <td>41,300</td>
+            <td>3,200</td>
+            <td class="eng-rate eng-mid">7.2%</td>
+            <td><svg class="mini-spark" viewBox="0 0 80 24"><polyline points="0,16 12,12 24,18 36,10 48,14 60,8 72,10 80,6" stroke="#ffe048"/></svg></td>
+          </tr>
+          <tr>
+            <td class="post-title">React: AI Writes Better Code Than Me</td>
+            <td class="post-date">Feb 28</td>
+            <td class="views">480,000</td>
+            <td>29,800</td>
+            <td>4,100</td>
+            <td class="eng-rate eng-mid">7.1%</td>
+            <td><svg class="mini-spark" viewBox="0 0 80 24"><polyline points="0,12 12,16 24,10 36,14 48,8 60,12 72,6 80,8" stroke="#ffe048"/></svg></td>
+          </tr>
+          <tr>
+            <td class="post-title">Why I Fired My VA for an AI Agent</td>
+            <td class="post-date">Feb 26</td>
+            <td class="views">310,000</td>
+            <td>18,600</td>
+            <td>2,800</td>
+            <td class="eng-rate eng-mid">6.9%</td>
+            <td><svg class="mini-spark" viewBox="0 0 80 24"><polyline points="0,14 12,10 24,16 36,12 48,18 60,14 72,16 80,12" stroke="#ffe048"/></svg></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Instagram Table -->
+    <div class="section-title fade-up d6"><span class="dot"></span>INSTAGRAM POSTS</div>
+    <div class="perf-table-wrap fade-up d7">
+      <table class="perf-table">
+        <thead><tr><th>Post</th><th>Date</th><th>Reach</th><th>Likes</th><th>Saves</th><th>Eng Rate</th><th>Trend</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="post-title">Studio Setup Tour (Reel)</td>
+            <td class="post-date">Mar 4</td>
+            <td class="views">312,000</td>
+            <td>24,800</td>
+            <td>8,200</td>
+            <td class="eng-rate eng-good">10.6%</td>
+            <td><svg class="mini-spark" viewBox="0 0 80 24"><polyline points="0,20 12,14 24,10 36,6 48,8 60,4 72,2 80,2" stroke="#00ff88"/></svg></td>
+          </tr>
+          <tr>
+            <td class="post-title">AI Workflow Carousel</td>
+            <td class="post-date">Mar 2</td>
+            <td class="views">198,000</td>
+            <td>16,200</td>
+            <td>12,400</td>
+            <td class="eng-rate eng-good">14.4%</td>
+            <td><svg class="mini-spark" viewBox="0 0 80 24"><polyline points="0,18 12,12 24,14 36,8 48,6 60,4 72,2 80,2" stroke="#00ff88"/></svg></td>
+          </tr>
+          <tr>
+            <td class="post-title">Day in the Life: AI Founder</td>
+            <td class="post-date">Feb 28</td>
+            <td class="views">145,000</td>
+            <td>11,200</td>
+            <td>3,800</td>
+            <td class="eng-rate eng-mid">10.3%</td>
+            <td><svg class="mini-spark" viewBox="0 0 80 24"><polyline points="0,14 12,10 24,12 36,8 48,14 60,10 72,12 80,8" stroke="#ffe048"/></svg></td>
+          </tr>
+          <tr>
+            <td class="post-title">Prompt Template Infographic</td>
+            <td class="post-date">Feb 25</td>
+            <td class="views">102,000</td>
+            <td>8,400</td>
+            <td>9,600</td>
+            <td class="eng-rate eng-good">17.6%</td>
+            <td><svg class="mini-spark" viewBox="0 0 80 24"><polyline points="0,16 12,12 24,8 36,6 48,4 60,4 72,2 80,2" stroke="#00ff88"/></svg></td>
+          </tr>
+          <tr>
+            <td class="post-title">Client Results: Before/After</td>
+            <td class="post-date">Feb 22</td>
+            <td class="views">88,000</td>
+            <td>6,100</td>
+            <td>2,900</td>
+            <td class="eng-rate eng-mid">10.2%</td>
+            <td><svg class="mini-spark" viewBox="0 0 80 24"><polyline points="0,10 12,14 24,8 36,12 48,10 60,16 72,12 80,14" stroke="#ffe048"/></svg></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- YouTube Table -->
+    <div class="section-title fade-up d8"><span class="dot"></span>YOUTUBE VIDEOS</div>
+    <div class="perf-table-wrap fade-up d9">
+      <table class="perf-table">
+        <thead><tr><th>Video</th><th>Date</th><th>Views</th><th>Likes</th><th>Comments</th><th>Eng Rate</th><th>Trend</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="post-title">Brand Kit Walkthrough (Full)</td>
+            <td class="post-date">Mar 3</td>
+            <td class="views">86,000</td>
+            <td>6,200</td>
+            <td>840</td>
+            <td class="eng-rate eng-good">8.2%</td>
+            <td><svg class="mini-spark" viewBox="0 0 80 24"><polyline points="0,18 12,14 24,12 36,8 48,10 60,6 72,4 80,4" stroke="#00ff88"/></svg></td>
+          </tr>
+          <tr>
+            <td class="post-title">AI Content Machine: Full Setup</td>
+            <td class="post-date">Feb 28</td>
+            <td class="views">64,000</td>
+            <td>4,800</td>
+            <td>620</td>
+            <td class="eng-rate eng-mid">8.5%</td>
+            <td><svg class="mini-spark" viewBox="0 0 80 24"><polyline points="0,16 12,12 24,14 36,10 48,8 60,6 72,8 80,4" stroke="#ffe048"/></svg></td>
+          </tr>
+          <tr>
+            <td class="post-title">Client Onboarding SOP (Tutorial)</td>
+            <td class="post-date">Feb 24</td>
+            <td class="views">42,000</td>
+            <td>3,100</td>
+            <td>380</td>
+            <td class="eng-rate eng-mid">8.3%</td>
+            <td><svg class="mini-spark" viewBox="0 0 80 24"><polyline points="0,14 12,10 24,12 36,8 48,12 60,10 72,8 80,6" stroke="#ffe048"/></svg></td>
+          </tr>
+          <tr>
+            <td class="post-title">Why MidJourney v7 Changes Everything</td>
+            <td class="post-date">Feb 20</td>
+            <td class="views">38,000</td>
+            <td>2,600</td>
+            <td>510</td>
+            <td class="eng-rate eng-mid">8.2%</td>
+            <td><svg class="mini-spark" viewBox="0 0 80 24"><polyline points="0,12 12,16 24,10 36,14 48,8 60,12 72,10 80,8" stroke="#ffe048"/></svg></td>
+          </tr>
+          <tr>
+            <td class="post-title">I Built an App With AI in 4 Minutes</td>
+            <td class="post-date">Feb 16</td>
+            <td class="views">28,000</td>
+            <td>2,100</td>
+            <td>290</td>
+            <td class="eng-rate eng-mid">8.5%</td>
+            <td><svg class="mini-spark" viewBox="0 0 80 24"><polyline points="0,10 12,14 24,8 36,12 48,10 60,14 72,12 80,10" stroke="#ffe048"/></svg></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+
+  <!-- ═══════ PERFORMANCE FEED ═══════ -->
+  <aside class="feed">
+    <div class="feed-title"><span class="pulse"></span>PERFORMANCE ALERTS</div>
+
+    <div class="feed-item fade-up d2">
+      <div class="feed-time">5 min ago</div>
+      <div class="feed-text"><span class="hl-green">MILESTONE</span> — TikTok <strong>"AI Tools Sleeping On"</strong> crossed <span class="hl-green">2M views</span></div>
+      <div class="feed-stat">
+        <div class="fs-val" style="color:var(--green);">2,100,000</div>
+        <div class="fs-label">Total views · 7.6% engagement</div>
+      </div>
+    </div>
+    <div class="feed-item fade-up d3">
+      <div class="feed-time">22 min ago</div>
+      <div class="feed-text">IG Carousel <strong>"AI Workflow"</strong> hit <span class="hl-magenta">14.4% save rate</span> — highest ever</div>
+      <span class="feed-tag">RECORD</span>
+    </div>
+    <div class="feed-item fade-up d4">
+      <div class="feed-time">1 hr ago</div>
+      <div class="feed-text">YouTube <strong>"Brand Kit"</strong> avg watch time: <span class="hl-cyan">8:42 / 12:00</span> (72% retention)</div>
+      <span class="feed-tag">RETENTION</span>
+    </div>
+    <div class="feed-item fade-up d5">
+      <div class="feed-time">2 hrs ago</div>
+      <div class="feed-text">TikTok weekly views <span class="hl-green">+24.8%</span> vs previous week</div>
+      <span class="feed-tag">WEEKLY</span>
+    </div>
+    <div class="feed-item fade-up d6">
+      <div class="feed-time">3 hrs ago</div>
+      <div class="feed-text">Instagram reach <span class="hl-green">+18.3%</span> — reels driving 82% of impressions</div>
+      <span class="feed-tag">WEEKLY</span>
+    </div>
+    <div class="feed-item fade-up d7">
+      <div class="feed-time">4 hrs ago</div>
+      <div class="feed-text">YouTube watch hours <span class="hl-yellow">-3.1%</span> — algorithm shift detected</div>
+      <span class="feed-tag">ALERT</span>
+    </div>
+    <div class="feed-item fade-up d8">
+      <div class="feed-time">6 hrs ago</div>
+      <div class="feed-text"><strong>Metric</strong> generated <span class="hl-cyan">weekly cross-platform report</span></div>
+      <span class="feed-tag">REPORT</span>
+    </div>
+  </aside>
+
+</div>
+</body>
+</html>

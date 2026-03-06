@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTRL — Content Research</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Orbitron:wght@500;700;900&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-deep: #06080d;
+  --bg-surface: #0b0f18;
+  --bg-card: #0f1420;
+  --bg-card-hover: #141a28;
+  --bg-sidebar: #080c14;
+  --bg-feed: #0a0e17;
+  --cyan: #00f0ff;
+  --cyan-dim: #00f0ff60;
+  --cyan-glow: 0 0 12px #00f0ff44, 0 0 40px #00f0ff18;
+  --magenta: #ff2eaa;
+  --magenta-dim: #ff2eaa55;
+  --green: #00ff88;
+  --green-dim: #00ff8855;
+  --yellow: #ffe048;
+  --yellow-dim: #ffe04855;
+  --orange: #ff8a2e;
+  --red: #ff3858;
+  --red-dim: #ff385855;
+  --text-primary: #e8edf5;
+  --text-secondary: #7a8ba8;
+  --text-muted: #475570;
+  --border: #1a2235;
+  --border-bright: #243050;
+  --font-heading: 'Orbitron', sans-serif;
+  --font-data: 'JetBrains Mono', monospace;
+  --font-body: 'Outfit', sans-serif;
+  --radius: 10px;
+  --sidebar-w: 62px;
+  --feed-w: 272px;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { font-size: 14px; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    linear-gradient(180deg, transparent 0%, var(--bg-deep) 100%),
+    linear-gradient(90deg, #0e1a2e22 1px, transparent 1px),
+    linear-gradient(180deg, #0e1a2e22 1px, transparent 1px);
+  background-size: 100% 100%, 48px 48px, 48px 48px;
+  z-index: -2;
+}
+body::after {
+  content: '';
+  position: fixed;
+  top: -40%; left: -20%; width: 140%; height: 140%;
+  background: radial-gradient(ellipse at 30% 20%, #00f0ff06 0%, transparent 55%),
+              radial-gradient(ellipse at 70% 80%, #ff2eaa05 0%, transparent 55%);
+  z-index: -1;
+}
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 4px; }
+
+.layout {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr var(--feed-w);
+  min-height: 100vh;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  width: var(--sidebar-w); background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; align-items: center;
+  padding: 16px 0; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
+}
+.sidebar-logo {
+  font-family: var(--font-heading); font-weight: 900; font-size: 0.7rem;
+  color: var(--cyan); letter-spacing: 3px; margin-bottom: 32px;
+  text-shadow: 0 0 10px var(--cyan-dim);
+}
+.sidebar-nav { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.sidebar-nav a {
+  width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+  border-radius: 8px; color: var(--text-muted); text-decoration: none;
+  transition: all .2s; position: relative;
+}
+.sidebar-nav a:hover, .sidebar-nav a.active { color: var(--cyan); background: #00f0ff10; }
+.sidebar-nav a.active::before {
+  content: ''; position: absolute; left: -11px;
+  width: 3px; height: 20px; background: var(--cyan);
+  border-radius: 0 3px 3px 0; box-shadow: 0 0 8px var(--cyan-dim);
+}
+.sidebar-nav a svg { width: 20px; height: 20px; }
+.sidebar-bottom { margin-top: auto; padding-top: 16px; }
+.sidebar-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 2px solid var(--border-bright);
+  background: linear-gradient(135deg, var(--cyan), var(--magenta));
+}
+
+/* ── Main ── */
+.main { grid-column: 2; padding: 24px 28px; overflow-y: auto; max-height: 100vh; }
+
+.section-title {
+  font-family: var(--font-heading); font-weight: 700; font-size: 0.75rem;
+  letter-spacing: 2.5px; text-transform: uppercase;
+  color: var(--text-secondary); margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-title .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--cyan); box-shadow: 0 0 6px var(--cyan);
+}
+
+/* ── Card base ── */
+.card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px 20px;
+  transition: all .25s; position: relative; overflow: hidden;
+}
+.card:hover {
+  border-color: var(--cyan-dim); box-shadow: var(--cyan-glow);
+  background: var(--bg-card-hover);
+}
+
+/* ── Trending Topics Table ── */
+.topics-table {
+  width: 100%; border-collapse: collapse; margin-bottom: 28px;
+}
+.topics-table th {
+  font-family: var(--font-heading); font-size: 0.58rem;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text-muted); text-align: left;
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+}
+.topics-table td {
+  padding: 12px 14px; border-bottom: 1px solid var(--border);
+  font-size: 0.82rem; vertical-align: middle;
+}
+.topics-table tr:hover td { background: var(--bg-card-hover); }
+.topics-table .topic-name { color: var(--text-primary); font-weight: 500; }
+.topics-table .hook-angle { color: var(--text-secondary); font-size: 0.78rem; }
+
+.platform-pill {
+  font-family: var(--font-data); font-size: 0.6rem;
+  padding: 3px 8px; border-radius: 4px; font-weight: 600;
+  display: inline-block;
+}
+.pill-tiktok { background: #ff004420; color: #ff3868; }
+.pill-ig { background: #c837ab20; color: #da5cc0; }
+.pill-yt { background: #ff000020; color: #ff4848; }
+.pill-blog { background: #00f0ff15; color: var(--cyan); }
+.pill-multi { background: #ffe04820; color: var(--yellow); }
+
+.potential-bar {
+  width: 60px; height: 6px; background: var(--border); border-radius: 3px;
+  overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 6px;
+}
+.potential-fill { height: 100%; border-radius: 3px; }
+
+.btn-script {
+  font-family: var(--font-data); font-size: 0.62rem; font-weight: 600;
+  color: var(--cyan); background: #00f0ff10; border: 1px solid #00f0ff30;
+  padding: 4px 10px; border-radius: 5px; cursor: pointer; transition: all .2s;
+  white-space: nowrap;
+}
+.btn-script:hover { background: #00f0ff22; box-shadow: 0 0 10px #00f0ff33; }
+
+/* ── Competitor Pulse ── */
+.competitors-row {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 14px; margin-bottom: 28px;
+}
+.comp-card { text-align: center; }
+.comp-card .comp-handle {
+  font-family: var(--font-data); font-size: 0.72rem;
+  color: var(--cyan); margin-bottom: 4px;
+}
+.comp-card .comp-stat {
+  font-family: var(--font-data); font-size: 1.4rem;
+  font-weight: 700; margin-bottom: 2px;
+}
+.comp-card .comp-label {
+  font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 8px;
+}
+.comp-card .comp-change {
+  font-family: var(--font-data); font-size: 0.65rem;
+  padding: 2px 8px; border-radius: 4px; display: inline-block;
+}
+.comp-up { background: #00ff8818; color: var(--green); }
+.comp-down { background: #ff385818; color: var(--red); }
+
+/* ── Hook Formula Library ── */
+.hooks-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 12px; margin-bottom: 28px;
+}
+.hook-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 18px; transition: all .25s;
+}
+.hook-card:hover { border-color: var(--cyan-dim); box-shadow: var(--cyan-glow); }
+.hook-label {
+  font-family: var(--font-heading); font-size: 0.55rem;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: 6px;
+}
+.hook-text {
+  font-size: 0.85rem; color: var(--text-primary); line-height: 1.5;
+  margin-bottom: 10px;
+}
+.hook-text em { color: var(--cyan); font-style: normal; }
+.btn-copy {
+  font-family: var(--font-data); font-size: 0.6rem; font-weight: 600;
+  color: var(--text-secondary); background: var(--bg-surface);
+  border: 1px solid var(--border-bright); padding: 4px 10px;
+  border-radius: 4px; cursor: pointer; transition: all .2s;
+}
+.btn-copy:hover { color: var(--cyan); border-color: var(--cyan-dim); }
+.btn-copy.copied { color: var(--green); border-color: var(--green-dim); }
+
+/* ── Quick Capture ── */
+.capture-area {
+  display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 28px;
+}
+.capture-textarea {
+  width: 100%; min-height: 80px; padding: 14px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text-primary);
+  font-family: var(--font-body); font-size: 0.85rem;
+  resize: vertical; transition: border-color .2s;
+}
+.capture-textarea::placeholder { color: var(--text-muted); }
+.capture-textarea:focus { outline: none; border-color: var(--cyan-dim); }
+.btn-capture {
+  justify-self: end;
+  font-family: var(--font-data); font-size: 0.68rem; font-weight: 600;
+  color: var(--bg-deep); background: var(--cyan);
+  border: none; padding: 8px 20px; border-radius: 6px;
+  cursor: pointer; transition: all .2s;
+  text-transform: uppercase; letter-spacing: 1px;
+}
+.btn-capture:hover { box-shadow: 0 0 20px var(--cyan-dim); }
+
+/* ── Idea Bank (right sidebar) ── */
+.feed {
+  width: var(--feed-w); background: var(--bg-feed);
+  border-left: 1px solid var(--border);
+  padding: 20px 16px; position: fixed;
+  top: 0; right: 0; bottom: 0; overflow-y: auto;
+}
+.feed-title {
+  font-family: var(--font-heading); font-size: 0.62rem; font-weight: 700;
+  letter-spacing: 2.5px; text-transform: uppercase;
+  color: var(--text-secondary); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.feed-title .pulse {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green); box-shadow: 0 0 6px var(--green);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+
+.idea-item {
+  padding: 12px 0; border-bottom: 1px solid var(--border);
+}
+.idea-item:last-child { border-bottom: none; }
+.idea-time {
+  font-family: var(--font-data); font-size: 0.58rem;
+  color: var(--text-muted); margin-bottom: 4px;
+}
+.idea-text {
+  font-size: 0.78rem; color: var(--text-secondary); line-height: 1.5;
+}
+.idea-text strong { color: var(--text-primary); font-weight: 500; }
+.idea-tag {
+  display: inline-block; font-family: var(--font-data); font-size: 0.56rem;
+  padding: 2px 6px; border-radius: 3px; margin-top: 5px;
+  background: #ff2eaa15; color: var(--magenta); border: 1px solid #ff2eaa25;
+}
+
+/* ── Animations ── */
+.fade-up { opacity: 0; transform: translateY(18px); animation: fadeUp 0.55s ease forwards; }
+@keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+.d1{animation-delay:.05s}.d2{animation-delay:.1s}.d3{animation-delay:.15s}
+.d4{animation-delay:.2s}.d5{animation-delay:.25s}.d6{animation-delay:.3s}
+.d7{animation-delay:.35s}.d8{animation-delay:.4s}.d9{animation-delay:.45s}
+.d10{animation-delay:.5s}.d11{animation-delay:.55s}.d12{animation-delay:.6s}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ═══════ LEFT SIDEBAR ═══════ -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">CTRL</div>
+    <div class="sidebar-nav">
+      <a href="ctrl-dashboard.html" title="Overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      </a>
+      <a href="research.html" class="active" title="Research">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </a>
+      <a href="pipeline.html" title="Pipeline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </a>
+      <a href="performance.html" title="Performance">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      </a>
+      <a href="agents.html" title="Agents">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </a>
+      <a href="clients.html" title="Clients">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </a>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="sidebar-avatar"></div>
+    </div>
+  </nav>
+
+  <!-- ═══════ MAIN CONTENT ═══════ -->
+  <main class="main">
+
+    <!-- Trending Topics -->
+    <div class="section-title fade-up d1"><span class="dot"></span>TRENDING TOPICS</div>
+    <div class="card fade-up d2" style="padding:0;overflow:hidden;margin-bottom:28px;">
+      <table class="topics-table">
+        <thead>
+          <tr>
+            <th>Topic</th>
+            <th>Hook Angle</th>
+            <th>Platform</th>
+            <th>Potential</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="topic-name">AI agents replacing SaaS</td>
+            <td class="hook-angle">"Your $200/mo stack is dead"</td>
+            <td><span class="platform-pill pill-tiktok">TikTok</span></td>
+            <td><span class="potential-bar"><span class="potential-fill" style="width:92%;background:var(--green);"></span></span><span style="font-family:var(--font-data);font-size:.65rem;color:var(--green);">92</span></td>
+            <td><button class="btn-script" onclick="alert('Opening script editor...')">→ Script</button></td>
+          </tr>
+          <tr>
+            <td class="topic-name">Vibe coding with Claude</td>
+            <td class="hook-angle">"I built an app in 4 minutes"</td>
+            <td><span class="platform-pill pill-yt">YouTube</span></td>
+            <td><span class="potential-bar"><span class="potential-fill" style="width:88%;background:var(--green);"></span></span><span style="font-family:var(--font-data);font-size:.65rem;color:var(--green);">88</span></td>
+            <td><button class="btn-script">→ Script</button></td>
+          </tr>
+          <tr>
+            <td class="topic-name">MCP servers explained</td>
+            <td class="hook-angle">"The protocol nobody's talking about"</td>
+            <td><span class="platform-pill pill-multi">Multi</span></td>
+            <td><span class="potential-bar"><span class="potential-fill" style="width:85%;background:var(--cyan);"></span></span><span style="font-family:var(--font-data);font-size:.65rem;color:var(--cyan);">85</span></td>
+            <td><button class="btn-script">→ Script</button></td>
+          </tr>
+          <tr>
+            <td class="topic-name">AI voice cloning ethics</td>
+            <td class="hook-angle">"This should scare you"</td>
+            <td><span class="platform-pill pill-ig">IG Reel</span></td>
+            <td><span class="potential-bar"><span class="potential-fill" style="width:79%;background:var(--cyan);"></span></span><span style="font-family:var(--font-data);font-size:.65rem;color:var(--cyan);">79</span></td>
+            <td><button class="btn-script">→ Script</button></td>
+          </tr>
+          <tr>
+            <td class="topic-name">Prompt engineering is dead</td>
+            <td class="hook-angle">"Stop writing prompts like it's 2024"</td>
+            <td><span class="platform-pill pill-tiktok">TikTok</span></td>
+            <td><span class="potential-bar"><span class="potential-fill" style="width:74%;background:var(--yellow);"></span></span><span style="font-family:var(--font-data);font-size:.65rem;color:var(--yellow);">74</span></td>
+            <td><button class="btn-script">→ Script</button></td>
+          </tr>
+          <tr>
+            <td class="topic-name">Local LLMs on M4 Mac</td>
+            <td class="hook-angle">"Free GPT-4 on your laptop"</td>
+            <td><span class="platform-pill pill-yt">YouTube</span></td>
+            <td><span class="potential-bar"><span class="potential-fill" style="width:71%;background:var(--yellow);"></span></span><span style="font-family:var(--font-data);font-size:.65rem;color:var(--yellow);">71</span></td>
+            <td><button class="btn-script">→ Script</button></td>
+          </tr>
+          <tr>
+            <td class="topic-name">AI content workflows</td>
+            <td class="hook-angle">"My 10-post-a-day system"</td>
+            <td><span class="platform-pill pill-blog">Blog</span></td>
+            <td><span class="potential-bar"><span class="potential-fill" style="width:68%;background:var(--yellow);"></span></span><span style="font-family:var(--font-data);font-size:.65rem;color:var(--yellow);">68</span></td>
+            <td><button class="btn-script">→ Script</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Competitor Pulse -->
+    <div class="section-title fade-up d3"><span class="dot"></span>COMPETITOR PULSE</div>
+    <div class="competitors-row">
+      <div class="card comp-card fade-up d4">
+        <div class="comp-handle">@ai.maverick</div>
+        <div class="comp-stat">1.8M</div>
+        <div class="comp-label">Avg views / week</div>
+        <span class="comp-change comp-up">+31% vs last week</span>
+      </div>
+      <div class="card comp-card fade-up d5">
+        <div class="comp-handle">@techbro.ai</div>
+        <div class="comp-stat">920K</div>
+        <div class="comp-label">Avg views / week</div>
+        <span class="comp-change comp-down">-8% vs last week</span>
+      </div>
+      <div class="card comp-card fade-up d6">
+        <div class="comp-handle">@neural.studio</div>
+        <div class="comp-stat">2.3M</div>
+        <div class="comp-label">Avg views / week</div>
+        <span class="comp-change comp-up">+12% vs last week</span>
+      </div>
+    </div>
+
+    <!-- Hook Formula Library -->
+    <div class="section-title fade-up d5"><span class="dot"></span>HOOK FORMULA LIBRARY</div>
+    <div class="hooks-grid">
+      <div class="hook-card fade-up d6">
+        <div class="hook-label">Curiosity Gap</div>
+        <div class="hook-text">"I found <em>[unexpected thing]</em> that <em>[bold claim]</em> — here's what happened"</div>
+        <button class="btn-copy" data-text="I found [unexpected thing] that [bold claim] — here's what happened">Copy</button>
+      </div>
+      <div class="hook-card fade-up d7">
+        <div class="hook-label">Contrarian Take</div>
+        <div class="hook-text">"Everyone's doing <em>[popular thing]</em> wrong. Here's the <em>[number]</em>-step fix."</div>
+        <button class="btn-copy" data-text="Everyone's doing [popular thing] wrong. Here's the [number]-step fix.">Copy</button>
+      </div>
+      <div class="hook-card fade-up d8">
+        <div class="hook-label">Authority Flex</div>
+        <div class="hook-text">"After <em>[impressive stat]</em>, I learned <em>[key insight]</em> that changed everything."</div>
+        <button class="btn-copy" data-text="After [impressive stat], I learned [key insight] that changed everything.">Copy</button>
+      </div>
+      <div class="hook-card fade-up d9">
+        <div class="hook-label">Urgency Play</div>
+        <div class="hook-text">"<em>[Platform/tool]</em> just changed <em>[thing]</em> — do this before it's too late."</div>
+        <button class="btn-copy" data-text="[Platform/tool] just changed [thing] — do this before it's too late.">Copy</button>
+      </div>
+      <div class="hook-card fade-up d10">
+        <div class="hook-label">Listicle Promise</div>
+        <div class="hook-text">"<em>[Number]</em> <em>[things]</em> that will <em>[desirable outcome]</em> in <em>[timeframe]</em>."</div>
+        <button class="btn-copy" data-text="[Number] [things] that will [desirable outcome] in [timeframe].">Copy</button>
+      </div>
+      <div class="hook-card fade-up d11">
+        <div class="hook-label">Story Opener</div>
+        <div class="hook-text">"A client came to me with <em>[problem]</em>. In <em>[time]</em> we <em>[result]</em>."</div>
+        <button class="btn-copy" data-text="A client came to me with [problem]. In [time] we [result].">Copy</button>
+      </div>
+    </div>
+
+    <!-- Quick Capture -->
+    <div class="section-title fade-up d10"><span class="dot"></span>QUICK CAPTURE</div>
+    <div class="capture-area fade-up d11">
+      <textarea class="capture-textarea" id="captureInput" placeholder="Jot down a content idea, hook, or insight..."></textarea>
+      <button class="btn-capture" id="captureBtn">+ Save to Idea Bank</button>
+    </div>
+
+  </main>
+
+  <!-- ═══════ IDEA BANK SIDEBAR ═══════ -->
+  <aside class="feed">
+    <div class="feed-title"><span class="pulse"></span>IDEA BANK</div>
+
+    <div class="idea-item fade-up d2">
+      <div class="idea-time">Today, 10:32 AM</div>
+      <div class="idea-text"><strong>React to viral AI meme</strong> — "POV: your AI agent negotiates your salary"</div>
+      <span class="idea-tag">REACTION</span>
+    </div>
+    <div class="idea-item fade-up d3">
+      <div class="idea-time">Today, 09:15 AM</div>
+      <div class="idea-text"><strong>Tutorial: Build an AI dashboard</strong> in one HTML file with zero frameworks</div>
+      <span class="idea-tag">TUTORIAL</span>
+    </div>
+    <div class="idea-item fade-up d4">
+      <div class="idea-time">Yesterday, 4:48 PM</div>
+      <div class="idea-text"><strong>Hot take:</strong> "AI won't take your job — someone using AI will"</div>
+      <span class="idea-tag">HOT TAKE</span>
+    </div>
+    <div class="idea-item fade-up d5">
+      <div class="idea-time">Yesterday, 1:20 PM</div>
+      <div class="idea-text"><strong>Case study:</strong> How we grew @lumina.studio from 0 to 50K in 30 days with AI content</div>
+      <span class="idea-tag">CASE STUDY</span>
+    </div>
+    <div class="idea-item fade-up d6">
+      <div class="idea-time">Mar 4, 11:05 AM</div>
+      <div class="idea-text"><strong>Tool roundup:</strong> 5 free AI tools that replaced $500/mo in subscriptions</div>
+      <span class="idea-tag">LISTICLE</span>
+    </div>
+    <div class="idea-item fade-up d7">
+      <div class="idea-time">Mar 3, 3:30 PM</div>
+      <div class="idea-text"><strong>Behind the scenes:</strong> My full AI content production workflow from idea to publish</div>
+      <span class="idea-tag">BTS</span>
+    </div>
+    <div class="idea-item fade-up d8">
+      <div class="idea-time">Mar 2, 9:00 AM</div>
+      <div class="idea-text"><strong>Trend alert:</strong> "Digital employees" narrative gaining traction — jump on early</div>
+      <span class="idea-tag">TREND</span>
+    </div>
+
+    <div id="newIdeas"></div>
+  </aside>
+
+</div>
+
+<script>
+// Copy hook buttons
+document.querySelectorAll('.btn-copy').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const text = btn.getAttribute('data-text');
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+    });
+  });
+});
+
+// Quick capture → Idea Bank
+document.getElementById('captureBtn').addEventListener('click', () => {
+  const input = document.getElementById('captureInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const container = document.getElementById('newIdeas');
+  const item = document.createElement('div');
+  item.className = 'idea-item fade-up';
+  item.style.animationDelay = '0s';
+  const now = new Date();
+  const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  item.innerHTML = `
+    <div class="idea-time">Just now, ${time}</div>
+    <div class="idea-text"><strong>${text}</strong></div>
+    <span class="idea-tag">NEW IDEA</span>
+  `;
+  container.insertBefore(item, container.firstChild);
+  input.value = '';
+});
+</script>
+</body>
+</html>
