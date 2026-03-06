@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTRL — AI Operations Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Orbitron:wght@500;700;900&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ───────── CSS Variables ───────── */
+:root {
+  --bg-deep: #06080d;
+  --bg-surface: #0b0f18;
+  --bg-card: #0f1420;
+  --bg-card-hover: #141a28;
+  --bg-sidebar: #080c14;
+  --bg-feed: #0a0e17;
+  --cyan: #00f0ff;
+  --cyan-dim: #00f0ff60;
+  --cyan-glow: 0 0 12px #00f0ff44, 0 0 40px #00f0ff18;
+  --magenta: #ff2eaa;
+  --magenta-dim: #ff2eaa55;
+  --green: #00ff88;
+  --green-dim: #00ff8855;
+  --yellow: #ffe048;
+  --yellow-dim: #ffe04855;
+  --orange: #ff8a2e;
+  --red: #ff3858;
+  --red-dim: #ff385855;
+  --text-primary: #e8edf5;
+  --text-secondary: #7a8ba8;
+  --text-muted: #475570;
+  --border: #1a2235;
+  --border-bright: #243050;
+  --font-heading: 'Orbitron', sans-serif;
+  --font-data: 'JetBrains Mono', monospace;
+  --font-body: 'Outfit', sans-serif;
+  --radius: 10px;
+  --sidebar-w: 62px;
+  --feed-w: 272px;
+}
+
+/* ───────── Reset & Base ───────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { font-size: 14px; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Atmospheric grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    linear-gradient(180deg, transparent 0%, var(--bg-deep) 100%),
+    linear-gradient(90deg, #0e1a2e22 1px, transparent 1px),
+    linear-gradient(180deg, #0e1a2e22 1px, transparent 1px);
+  background-size: 100% 100%, 48px 48px, 48px 48px;
+  z-index: -2;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  top: -40%; left: -20%;
+  width: 140%; height: 140%;
+  background: radial-gradient(ellipse at 30% 20%, #00f0ff06 0%, transparent 55%),
+              radial-gradient(ellipse at 70% 80%, #ff2eaa05 0%, transparent 55%);
+  z-index: -1;
+}
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 4px; }
+
+/* ───────── Layout ───────── */
+.layout {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr var(--feed-w);
+  min-height: 100vh;
+}
+
+/* ───────── Left Sidebar ───────── */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+}
+
+.sidebar-logo {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  font-size: 0.7rem;
+  color: var(--cyan);
+  letter-spacing: 3px;
+  margin-bottom: 32px;
+  text-shadow: 0 0 10px var(--cyan-dim);
+}
+
+.sidebar-nav { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+
+.sidebar-nav a {
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 8px;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: all .2s;
+  position: relative;
+}
+
+.sidebar-nav a:hover,
+.sidebar-nav a.active {
+  color: var(--cyan);
+  background: #00f0ff10;
+}
+
+.sidebar-nav a.active::before {
+  content: '';
+  position: absolute;
+  left: -11px;
+  width: 3px; height: 20px;
+  background: var(--cyan);
+  border-radius: 0 3px 3px 0;
+  box-shadow: 0 0 8px var(--cyan-dim);
+}
+
+.sidebar-nav a svg { width: 20px; height: 20px; }
+
+.sidebar-bottom {
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+.sidebar-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--border-bright);
+  background: linear-gradient(135deg, var(--cyan), var(--magenta));
+}
+
+/* ───────── Main Content ───────── */
+.main {
+  grid-column: 2;
+  padding: 24px 28px;
+  overflow-y: auto;
+  max-height: 100vh;
+}
+
+/* ───────── Section Title ───────── */
+.section-title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-title .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 6px var(--cyan);
+}
+
+/* ───────── Briefing Banner ───────── */
+.briefing {
+  background: linear-gradient(135deg, #0d1525, #111b30);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius);
+  padding: 22px 28px;
+  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 28px;
+  position: relative;
+  overflow: hidden;
+}
+
+.briefing::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+}
+
+.briefing-item label {
+  font-family: var(--font-heading);
+  font-size: 0.6rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.briefing-item .value {
+  font-family: var(--font-data);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.briefing-item .sub {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: 3px;
+}
+
+/* ───────── Cards Grid ───────── */
+.cards-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+/* ───────── Glow Card ───────── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  transition: all .25s;
+  position: relative;
+  overflow: hidden;
+}
+
+.card:hover {
+  border-color: var(--cyan-dim);
+  box-shadow: var(--cyan-glow);
+  background: var(--bg-card-hover);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.card-platform {
+  font-family: var(--font-heading);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.card-badge {
+  font-family: var(--font-data);
+  font-size: 0.68rem;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.badge-up { background: #00ff8818; color: var(--green); }
+.badge-down { background: #ff385818; color: var(--red); }
+
+.card-metric {
+  font-family: var(--font-data);
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.card-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+}
+
+/* Sparkline */
+.sparkline {
+  width: 100%;
+  height: 40px;
+}
+
+.sparkline polyline {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sparkline .area {
+  stroke: none;
+  opacity: 0.12;
+}
+
+/* ───────── AI Agents ───────── */
+.agents-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.agent-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+  transition: all .25s;
+}
+
+.agent-card:hover {
+  border-color: var(--cyan-dim);
+  box-shadow: var(--cyan-glow);
+}
+
+.agent-avatar {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  margin: 0 auto 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem;
+  border: 2px solid var(--border-bright);
+}
+
+.agent-name {
+  font-family: var(--font-heading);
+  font-size: 0.6rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.agent-role {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+.agent-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-family: var(--font-data);
+  font-size: 0.65rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+}
+
+.status-dot.online { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.status-dot.busy { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
+.status-dot.idle { background: var(--text-muted); }
+
+.agent-bar-track {
+  width: 100%;
+  height: 4px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.agent-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 1s ease;
+}
+
+/* ───────── Kanban ───────── */
+.kanban {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.kanban-col {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  min-height: 180px;
+}
+
+.kanban-col-header {
+  font-family: var(--font-heading);
+  font-size: 0.58rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.kanban-count {
+  font-family: var(--font-data);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.kanban-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  font-size: 0.78rem;
+  transition: all .2s;
+  cursor: grab;
+}
+
+.kanban-card:hover {
+  border-color: var(--cyan-dim);
+  transform: translateY(-1px);
+}
+
+.kanban-card .tag {
+  font-family: var(--font-data);
+  font-size: 0.6rem;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-top: 6px;
+  display: inline-block;
+}
+
+.tag-tiktok { background: #ff004420; color: #ff3868; }
+.tag-ig { background: #c837ab20; color: #da5cc0; }
+.tag-yt { background: #ff000020; color: #ff4848; }
+.tag-blog { background: #00f0ff15; color: var(--cyan); }
+
+/* ───────── SOP Library ───────── */
+.sops-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.sop-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  transition: all .25s;
+  cursor: pointer;
+}
+
+.sop-card:hover {
+  border-color: var(--cyan-dim);
+  box-shadow: var(--cyan-glow);
+}
+
+.sop-icon {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem;
+  margin-bottom: 10px;
+}
+
+.sop-name {
+  font-family: var(--font-heading);
+  font-size: 0.62rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.sop-desc {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.sop-run {
+  font-family: var(--font-data);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--cyan);
+  background: #00f0ff12;
+  border: 1px solid #00f0ff30;
+  padding: 5px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all .2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.sop-run:hover {
+  background: #00f0ff22;
+  box-shadow: 0 0 12px #00f0ff33;
+}
+
+/* ───────── Activity Feed ───────── */
+.feed {
+  width: var(--feed-w);
+  background: var(--bg-feed);
+  border-left: 1px solid var(--border);
+  padding: 20px 16px;
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  overflow-y: auto;
+}
+
+.feed-title {
+  font-family: var(--font-heading);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.feed-title .pulse {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.feed-item {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+
+.feed-item:last-child { border-bottom: none; }
+
+.feed-time {
+  font-family: var(--font-data);
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.feed-text {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.feed-text strong { color: var(--text-primary); font-weight: 500; }
+.feed-text .hl-cyan { color: var(--cyan); }
+.feed-text .hl-green { color: var(--green); }
+.feed-text .hl-magenta { color: var(--magenta); }
+.feed-text .hl-yellow { color: var(--yellow); }
+
+.feed-tag {
+  display: inline-block;
+  font-family: var(--font-data);
+  font-size: 0.58rem;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-top: 5px;
+  background: #00f0ff12;
+  color: var(--cyan);
+  border: 1px solid #00f0ff25;
+}
+
+/* ───────── Animations ───────── */
+.fade-up {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: fadeUp 0.55s ease forwards;
+}
+
+@keyframes fadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Stagger classes */
+.d1 { animation-delay: 0.05s; }
+.d2 { animation-delay: 0.10s; }
+.d3 { animation-delay: 0.15s; }
+.d4 { animation-delay: 0.20s; }
+.d5 { animation-delay: 0.25s; }
+.d6 { animation-delay: 0.30s; }
+.d7 { animation-delay: 0.35s; }
+.d8 { animation-delay: 0.40s; }
+.d9 { animation-delay: 0.45s; }
+.d10 { animation-delay: 0.50s; }
+.d11 { animation-delay: 0.55s; }
+.d12 { animation-delay: 0.60s; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ═══════ LEFT SIDEBAR ═══════ -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">CTRL</div>
+    <div class="sidebar-nav">
+      <a href="#" class="active" title="Overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      </a>
+      <a href="#" title="Research">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </a>
+      <a href="#" title="Pipeline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </a>
+      <a href="#" title="Performance">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      </a>
+      <a href="#" title="Agents">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </a>
+      <a href="#" title="Clients">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </a>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="sidebar-avatar"></div>
+    </div>
+  </nav>
+
+  <!-- ═══════ MAIN CONTENT ═══════ -->
+  <main class="main">
+
+    <!-- Today's Briefing -->
+    <div class="section-title fade-up d1"><span class="dot"></span>TODAY'S BRIEFING</div>
+    <div class="briefing fade-up d2">
+      <div class="briefing-item">
+        <label>Scheduled Posts</label>
+        <div class="value">7 Posts</div>
+        <div class="sub">3 TikTok · 2 IG Reels · 1 YT Short · 1 Blog</div>
+      </div>
+      <div class="briefing-item">
+        <label>Scripts Due</label>
+        <div class="value">4 Scripts</div>
+        <div class="sub">2 in review · 1 pending approval · 1 drafting</div>
+      </div>
+      <div class="briefing-item">
+        <label>Top Performer</label>
+        <div class="value" style="color:var(--green);">↑ 342% Engagement</div>
+        <div class="sub">"AI Tools You're Sleeping On" — TikTok · 2.1M views</div>
+      </div>
+    </div>
+
+    <!-- Social Performance -->
+    <div class="section-title fade-up d3"><span class="dot"></span>SOCIAL PERFORMANCE</div>
+    <div class="cards-row">
+      <div class="card fade-up d4">
+        <div class="card-header">
+          <span class="card-platform" style="color:#ff004d;">TikTok</span>
+          <span class="card-badge badge-up">+24.8%</span>
+        </div>
+        <div class="card-metric">2.4M</div>
+        <div class="card-label">Views this week</div>
+        <svg class="sparkline" viewBox="0 0 200 40">
+          <polyline class="area" points="0,35 20,28 40,32 60,20 80,24 100,12 120,18 140,8 160,14 180,6 200,10 200,40 0,40" fill="#ff004d"/>
+          <polyline points="0,35 20,28 40,32 60,20 80,24 100,12 120,18 140,8 160,14 180,6 200,10" stroke="#ff004d"/>
+        </svg>
+      </div>
+      <div class="card fade-up d5">
+        <div class="card-header">
+          <span class="card-platform" style="color:#c837ab;">Instagram</span>
+          <span class="card-badge badge-up">+18.3%</span>
+        </div>
+        <div class="card-metric">847K</div>
+        <div class="card-label">Reach this week</div>
+        <svg class="sparkline" viewBox="0 0 200 40">
+          <polyline class="area" points="0,30 20,26 40,28 60,18 80,22 100,14 120,20 140,10 160,16 180,12 200,8 200,40 0,40" fill="#c837ab"/>
+          <polyline points="0,30 20,26 40,28 60,18 80,22 100,14 120,20 140,10 160,16 180,12 200,8" stroke="#c837ab"/>
+        </svg>
+      </div>
+      <div class="card fade-up d6">
+        <div class="card-header">
+          <span class="card-platform" style="color:#ff4848;">YouTube</span>
+          <span class="card-badge badge-down">-3.1%</span>
+        </div>
+        <div class="card-metric">194K</div>
+        <div class="card-label">Watch hours this week</div>
+        <svg class="sparkline" viewBox="0 0 200 40">
+          <polyline class="area" points="0,12 20,16 40,10 60,18 80,14 100,22 120,18 140,26 160,20 180,28 200,24 200,40 0,40" fill="#ff4848"/>
+          <polyline points="0,12 20,16 40,10 60,18 80,14 100,22 120,18 140,26 160,20 180,28 200,24" stroke="#ff4848"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- AI Team -->
+    <div class="section-title fade-up d5"><span class="dot"></span>AI TEAM</div>
+    <div class="agents-grid">
+      <div class="agent-card fade-up d6">
+        <div class="agent-avatar" style="background:linear-gradient(135deg,#0a1628,#162040);border-color:#00f0ff40;">🔍</div>
+        <div class="agent-name">Scout</div>
+        <div class="agent-role">Trend Researcher</div>
+        <div class="agent-status"><span class="status-dot online"></span><span style="color:var(--green);">ACTIVE</span></div>
+        <div class="agent-bar-track"><div class="agent-bar-fill" style="width:78%;background:var(--green);"></div></div>
+      </div>
+      <div class="agent-card fade-up d7">
+        <div class="agent-avatar" style="background:linear-gradient(135deg,#0a1628,#162040);border-color:#ff2eaa40;">✍️</div>
+        <div class="agent-name">Quill</div>
+        <div class="agent-role">Script Writer</div>
+        <div class="agent-status"><span class="status-dot online"></span><span style="color:var(--green);">ACTIVE</span></div>
+        <div class="agent-bar-track"><div class="agent-bar-fill" style="width:62%;background:var(--cyan);"></div></div>
+      </div>
+      <div class="agent-card fade-up d8">
+        <div class="agent-avatar" style="background:linear-gradient(135deg,#0a1628,#162040);border-color:#ffe04840;">🎬</div>
+        <div class="agent-name">Render</div>
+        <div class="agent-role">Video Editor</div>
+        <div class="agent-status"><span class="status-dot busy"></span><span style="color:var(--yellow);">BUSY</span></div>
+        <div class="agent-bar-track"><div class="agent-bar-fill" style="width:91%;background:var(--yellow);"></div></div>
+      </div>
+      <div class="agent-card fade-up d9">
+        <div class="agent-avatar" style="background:linear-gradient(135deg,#0a1628,#162040);border-color:#00ff8840;">📊</div>
+        <div class="agent-name">Metric</div>
+        <div class="agent-role">Analytics Agent</div>
+        <div class="agent-status"><span class="status-dot online"></span><span style="color:var(--green);">ACTIVE</span></div>
+        <div class="agent-bar-track"><div class="agent-bar-fill" style="width:45%;background:var(--magenta);"></div></div>
+      </div>
+      <div class="agent-card fade-up d10">
+        <div class="agent-avatar" style="background:linear-gradient(135deg,#0a1628,#162040);border-color:#ff385840;">📅</div>
+        <div class="agent-name">Chrono</div>
+        <div class="agent-role">Scheduler</div>
+        <div class="agent-status"><span class="status-dot idle"></span><span style="color:var(--text-muted);">IDLE</span></div>
+        <div class="agent-bar-track"><div class="agent-bar-fill" style="width:0%;background:var(--text-muted);"></div></div>
+      </div>
+    </div>
+
+    <!-- Content Pipeline Kanban -->
+    <div class="section-title fade-up d7"><span class="dot"></span>CONTENT PIPELINE</div>
+    <div class="kanban fade-up d8">
+      <div class="kanban-col">
+        <div class="kanban-col-header">Ideas <span class="kanban-count">4</span></div>
+        <div class="kanban-card">
+          AI tools for freelancers<br><span class="tag tag-tiktok">TikTok</span>
+        </div>
+        <div class="kanban-card">
+          Day in the life: AI CEO<br><span class="tag tag-yt">YouTube</span>
+        </div>
+        <div class="kanban-card">
+          Prompt engineering 101<br><span class="tag tag-blog">Blog</span>
+        </div>
+        <div class="kanban-card">
+          AI vs. human designer<br><span class="tag tag-ig">IG Reel</span>
+        </div>
+      </div>
+      <div class="kanban-col">
+        <div class="kanban-col-header">Scripting <span class="kanban-count">3</span></div>
+        <div class="kanban-card">
+          Top 5 automation hacks<br><span class="tag tag-tiktok">TikTok</span>
+        </div>
+        <div class="kanban-card">
+          Client onboarding flow<br><span class="tag tag-yt">YouTube</span>
+        </div>
+        <div class="kanban-card">
+          Aesthetic AI workflow<br><span class="tag tag-ig">IG Reel</span>
+        </div>
+      </div>
+      <div class="kanban-col">
+        <div class="kanban-col-header">Editing <span class="kanban-count">2</span></div>
+        <div class="kanban-card">
+          MidJourney v7 review<br><span class="tag tag-yt">YouTube</span>
+        </div>
+        <div class="kanban-card">
+          Voice cloning tutorial<br><span class="tag tag-tiktok">TikTok</span>
+        </div>
+      </div>
+      <div class="kanban-col">
+        <div class="kanban-col-header">Scheduled <span class="kanban-count">3</span></div>
+        <div class="kanban-card">
+          GPT vs Claude debate<br><span class="tag tag-tiktok">TikTok</span>
+        </div>
+        <div class="kanban-card">
+          Weekly AI roundup<br><span class="tag tag-blog">Blog</span>
+        </div>
+        <div class="kanban-card">
+          Studio setup tour<br><span class="tag tag-ig">IG Reel</span>
+        </div>
+      </div>
+      <div class="kanban-col">
+        <div class="kanban-col-header">Published <span class="kanban-count">2</span></div>
+        <div class="kanban-card">
+          AI tools sleeping on ✓<br><span class="tag tag-tiktok">TikTok</span>
+        </div>
+        <div class="kanban-card">
+          Brand kit walkthrough ✓<br><span class="tag tag-yt">YouTube</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SOP Library -->
+    <div class="section-title fade-up d9"><span class="dot"></span>SOP LIBRARY</div>
+    <div class="sops-grid">
+      <div class="sop-card fade-up d10">
+        <div class="sop-icon" style="background:#00f0ff12;">⚡</div>
+        <div class="sop-name">Content Repurpose</div>
+        <div class="sop-desc">Auto-split long-form video into shorts, reels, and tweets with captions.</div>
+        <button class="sop-run">▶ RUN AUTOMATION</button>
+      </div>
+      <div class="sop-card fade-up d11">
+        <div class="sop-icon" style="background:#ff2eaa12;">📈</div>
+        <div class="sop-name">Weekly Report</div>
+        <div class="sop-desc">Generate cross-platform analytics PDF with AI-written insights.</div>
+        <button class="sop-run">▶ RUN AUTOMATION</button>
+      </div>
+      <div class="sop-card fade-up d12">
+        <div class="sop-icon" style="background:#00ff8812;">🔄</div>
+        <div class="sop-name">Client Sync</div>
+        <div class="sop-desc">Pull approvals, push deliverables, and update client portal statuses.</div>
+        <button class="sop-run">▶ RUN AUTOMATION</button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ═══════ LIVE ACTIVITY FEED ═══════ -->
+  <aside class="feed">
+    <div class="feed-title"><span class="pulse"></span>LIVE ACTIVITY</div>
+
+    <div class="feed-item fade-up d2">
+      <div class="feed-time">2 min ago</div>
+      <div class="feed-text"><strong>Scout</strong> flagged a <span class="hl-cyan">trending audio</span> — "Electric Dreams" +480% usage today</div>
+      <span class="feed-tag">TREND ALERT</span>
+    </div>
+    <div class="feed-item fade-up d3">
+      <div class="feed-time">8 min ago</div>
+      <div class="feed-text"><strong>Quill</strong> finished script for <span class="hl-magenta">"Top 5 Automation Hacks"</span> — ready for review</div>
+      <span class="feed-tag">SCRIPT DONE</span>
+    </div>
+    <div class="feed-item fade-up d4">
+      <div class="feed-time">14 min ago</div>
+      <div class="feed-text"><strong>Render</strong> is encoding <span class="hl-yellow">"MidJourney v7 Review"</span> — ETA 12 min</div>
+      <span class="feed-tag">ENCODING</span>
+    </div>
+    <div class="feed-item fade-up d5">
+      <div class="feed-time">23 min ago</div>
+      <div class="feed-text">TikTok post <span class="hl-green">+48K views</span> in first hour — "AI Tools You're Sleeping On"</div>
+      <span class="feed-tag">MILESTONE</span>
+    </div>
+    <div class="feed-item fade-up d6">
+      <div class="feed-time">31 min ago</div>
+      <div class="feed-text"><strong>Metric</strong> updated dashboard — <span class="hl-cyan">weekly report</span> auto-generated</div>
+      <span class="feed-tag">ANALYTICS</span>
+    </div>
+    <div class="feed-item fade-up d7">
+      <div class="feed-time">45 min ago</div>
+      <div class="feed-text"><strong>Chrono</strong> scheduled 3 posts for tomorrow — <span class="hl-magenta">09:00, 13:00, 19:00</span></div>
+      <span class="feed-tag">SCHEDULED</span>
+    </div>
+    <div class="feed-item fade-up d8">
+      <div class="feed-time">1 hr ago</div>
+      <div class="feed-text">Client <strong>@lumina.studio</strong> approved <span class="hl-green">brand kit deliverable</span></div>
+      <span class="feed-tag">CLIENT</span>
+    </div>
+    <div class="feed-item fade-up d9">
+      <div class="feed-time">1.5 hrs ago</div>
+      <div class="feed-text"><strong>Scout</strong> compiled <span class="hl-cyan">12 new content ideas</span> from competitor analysis</div>
+      <span class="feed-tag">RESEARCH</span>
+    </div>
+    <div class="feed-item fade-up d10">
+      <div class="feed-time">2 hrs ago</div>
+      <div class="feed-text">Instagram Reel <span class="hl-green">hit 100K reach</span> — "Studio Setup Tour"</div>
+      <span class="feed-tag">MILESTONE</span>
+    </div>
+    <div class="feed-item fade-up d11">
+      <div class="feed-time">3 hrs ago</div>
+      <div class="feed-text">System health: all <span class="hl-green">5 agents online</span> — API latency 42ms avg</div>
+      <span class="feed-tag">SYSTEM</span>
+    </div>
+  </aside>
+
+</div>
+</body>
+</html>
