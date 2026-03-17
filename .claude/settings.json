@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "bash scripts/sync-claude-config.sh"
+      }
+    ]
+  }
+}
