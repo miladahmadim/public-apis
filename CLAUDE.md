@@ -1,9 +1,18 @@
-<!-- AUTO-SYNCED by scripts/sync-claude-config.sh -->
-<!-- Global section is synced from ~/.claude/CLAUDE.md on session start -->
-<!-- Project-specific config: .claude/project-config.md -->
-<!-- Run: bash scripts/sync-claude-config.sh to manually sync -->
+<!-- AUTO-SYNCED: 2026-03-17 12:52 -->
+<!-- Global: ~/.claude/CLAUDE.md | Project: .claude/project-config.md -->
 
-# Project: public-apis
+# Milad's Global Rules
+
+## Code Style
+- Schrijf altijd in TypeScript waar mogelijk
+- Gebruik Nederlandse comments
+- Test alles voor je commit
+
+## Favoriete Tools
+- Scrapling voor web scraping
+- Context7 voor actuele docs
+
+---
 
 <!-- Project-specific Claude configuration for public-apis -->
 <!-- This file is merged with your global ~/.claude/CLAUDE.md by the sync script -->
@@ -42,3 +51,8 @@ Each API entry in README.md follows this table format:
 ## Connected Tools & Repos
 
 <!-- Add references to your other repos/skills here -->
+<!-- Example:
+- Scrapling: Use for testing API endpoints that need scraping fallback
+- claude-seo: Use /seo audit for any landing pages
+- claude-skills: engineering/api-design-reviewer for API quality checks
+-->
