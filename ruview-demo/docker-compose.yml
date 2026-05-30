@@ -1,0 +1,12 @@
+# RuView WiFi-DensePose demo (gesimuleerde data, geen hardware nodig)
+# Start met:   docker compose up
+# Open dan:    http://localhost:3000
+# Stop met:    Ctrl + C  (of in een ander tabblad: docker compose down)
+
+services:
+  ruview:
+    image: ruvnet/wifi-densepose:latest
+    container_name: ruview-demo
+    ports:
+      - "3000:3000"   # links = poort op je MacBook, rechts = poort in de container
+    restart: unless-stopped
