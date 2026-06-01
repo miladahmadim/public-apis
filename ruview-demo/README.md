@@ -7,6 +7,9 @@ browser hoe het systeem werkt.
 > Bron-project: https://github.com/ruvnet/RuView
 > RuView zet gewone WiFi-signalen om in aanwezigheids-, ademhalings- en
 > houdingsdetectie, zonder camera.
+>
+> De demo draait op poort **8973** (`http://localhost:8973`), omdat de
+> standaardpoort 3000 vaak al bezet is.
 
 ---
 
@@ -49,7 +52,7 @@ docker compose up
 Open daarna in je browser:
 
 ```
-http://localhost:3000
+http://localhost:8973
 ```
 
 Stoppen: `Ctrl + C`, of in een ander Terminal-tabblad `docker compose down`.
@@ -60,10 +63,10 @@ Stoppen: `Ctrl + C`, of in een ander Terminal-tabblad `docker compose down`.
 
 ```bash
 docker pull ruvnet/wifi-densepose:latest
-docker run --rm -p 3000:3000 ruvnet/wifi-densepose:latest
+docker run --rm -p 8973:3000 ruvnet/wifi-densepose:latest
 ```
 
-Daarna `http://localhost:3000` openen.
+Daarna `http://localhost:8973` openen.
 
 ---
 
@@ -72,7 +75,7 @@ Daarna `http://localhost:3000` openen.
 | Probleem | Oplossing |
 |---|---|
 | `Cannot connect to the Docker daemon` | Docker Desktop is niet gestart. Open het en wacht tot "running". |
-| `port is already allocated` | Poort 3000 is bezet. Gebruik een andere, bv. `docker run --rm -p 8080:3000 ruvnet/wifi-densepose:latest` en open `http://localhost:8080`. |
+| `port is already allocated` | Poort 8973 is óók bezet. Gebruik een andere, bv. `docker run --rm -p 8088:3000 ruvnet/wifi-densepose:latest` en open `http://localhost:8088`. |
 | Het image kan niet gevonden worden | Controleer je internetverbinding; de naam kan ook `ruvnet/ruview:latest` zijn — kijk op https://hub.docker.com/u/ruvnet |
 | Pull duurt lang | Normaal bij de eerste keer; het image is groot. |
 

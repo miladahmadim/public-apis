@@ -20,7 +20,7 @@ echo "==> Image ophalen (ruvnet/wifi-densepose:latest)..."
 docker pull ruvnet/wifi-densepose:latest
 
 # 3. Starten
-echo "==> Container starten op http://localhost:3000"
+echo "==> Container starten op http://localhost:8973"
 echo "    (Stop met Ctrl + C)"
-open "http://localhost:3000" 2>/dev/null || true
-docker run --rm -p 3000:3000 ruvnet/wifi-densepose:latest
+open "http://localhost:8973" 2>/dev/null || true
+docker run --rm -p 8973:3000 ruvnet/wifi-densepose:latest
